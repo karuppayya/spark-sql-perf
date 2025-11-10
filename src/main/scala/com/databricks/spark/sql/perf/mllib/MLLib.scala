@@ -6,7 +6,7 @@ import scala.language.implicitConversions
 
 import org.slf4j.LoggerFactory
 
-import org.apache.spark.sql.{DataFrame, SQLContext}
+import org.apache.spark.sql.{DataFrame, SQLContext, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext}
 
 import com.databricks.spark.sql.perf._
@@ -15,7 +15,7 @@ import com.databricks.spark.sql.perf._
 class MLLib(sqlContext: SQLContext)
   extends Benchmark(sqlContext) with Serializable {
 
-  def this() = this(SQLContext.getOrCreate(SparkContext.getOrCreate()))
+  def this() = this(SparkSession.builder.getOrCreate().sqlContext)
 }
 
 object MLLib {
@@ -82,7 +82,8 @@ object MLLib {
     logger.info("Starting run")
     val conf = getConf(yamlFile, yamlConfig)
     val sparkConf = new SparkConf().setAppName("MLlib QA").setMaster("local[2]")
-    val sc = SparkContext.getOrCreate(sparkConf)
+    val spark = SparkSession.builder.config(sparkConf).getOrCreate()
+    val sc = spark.sparkContext
     sc.setLogLevel("INFO")
     val b = new com.databricks.spark.sql.perf.mllib.MLLib()
     val benchmarks = getBenchmarks(conf)

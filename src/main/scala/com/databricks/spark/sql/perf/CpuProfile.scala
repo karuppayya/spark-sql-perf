@@ -27,7 +27,8 @@ import scala.sys.process._
 
 import org.apache.hadoop.fs.{FileSystem, Path}
 
-import com.twitter.jvm.CpuProfile
+// Comment out twitter CpuProfile import for Scala 2.13 compatibility
+// import com.twitter.jvm.CpuProfile
 
 /**
  * A collection of utilities for parsing stacktraces that have been recorded in JSON and generating visualizations
@@ -107,12 +108,15 @@ package object cpu {
         case Row(stackLines: Array[String], count: Long) => stackLines.toSeq.map(toStackElement) -> count :: Nil
         case other => println(s"Failed to parse $other"); Nil
       }.toMap
-      val profile = new com.twitter.jvm.CpuProfile(counts, com.twitter.util.Duration.fromSeconds(10), cpuLogs.count().toInt, 0)
+      // Comment out CpuProfile usage for Scala 2.13 compatibility
+      // val profile = new com.twitter.jvm.CpuProfile(counts, com.twitter.util.Duration.fromSeconds(10), cpuLogs.count().toInt, 0)
+      // profile.writeGoogleProfile(new FileOutputStream(outfile))
+      println("CPU profiling disabled - twitter util-jvm not available for Scala 2.13")
 
+      // Comment out the rest of the profiling code
+      /*
       val outfile = File.createTempFile("cpu", "profile")
       val svgFile = File.createTempFile("cpu", "svg")
-
-      profile.writeGoogleProfile(new FileOutputStream(outfile))
 
       println(run(
         "cp /dbfs/home/michael/pprof ./",
@@ -121,7 +125,8 @@ package object cpu {
 
       val timestamp = System.currentTimeMillis()
       fs.cp(s"file://$svgFile", s"/FileStore/cpu.profiles/$timestamp.svg", false)
-      s"""<a href="https://dogfood.staging.cloud.databricks.com/files/cpu.profiles/$timestamp.svg"/>CPU Usage Visualization</a>"""
+      */
+      s"""<a href="https://dogfood.staging.cloud.databricks.com/files/cpu.profiles/cpu-profiling-disabled.svg"/>CPU Usage Visualization (Disabled)</a>"""
     }
   }
 }

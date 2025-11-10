@@ -18,7 +18,7 @@ package com.databricks.spark.sql.perf
 
 import java.util.concurrent.LinkedBlockingQueue
 
-import scala.collection.immutable.Stream
+import scala.collection.immutable.LazyList
 import scala.sys.process._
 
 import org.slf4j.LoggerFactory
@@ -43,7 +43,7 @@ object BlockingLineStream {
   private final class BlockingStreamed[T](
     val process:   T => Unit,
     val    done: Int => Unit,
-    val  stream:  () => Stream[T]
+    val  stream:  () => LazyList[T]
   )
 
   // See scala.sys.process.Streamed
@@ -55,11 +55,11 @@ object BlockingLineStream {
     def apply[T](nonzeroException: Boolean): BlockingStreamed[T] = {
       val q = new LinkedBlockingQueue[Either[Int, T]](maxQueueSize)
 
-      def next(): Stream[T] = q.take match {
-        case Left(0) => Stream.empty
+      def next(): LazyList[T] = q.take match {
+        case Left(0) => LazyList.empty
         case Left(code) =>
-          if (nonzeroException) scala.sys.error("Nonzero exit code: " + code) else Stream.empty
-        case Right(s) => Stream.cons(s, next())
+          if (nonzeroException) scala.sys.error("Nonzero exit code: " + code) else LazyList.empty
+        case Right(s) => s #:: next()
       }
 
       new BlockingStreamed((s: T) => q put Right(s), code => q put Left(code), () => next())
@@ -77,7 +77,7 @@ object BlockingLineStream {
     }
   }
 
-  def apply(command: Seq[String]): Stream[String] = {
+  def apply(command: Seq[String]): LazyList[String] = {
     val streamed = BlockingStreamed[String](true)
     val process = command.run(BasicIO(false, streamed.process, None))
     Spawn(streamed.done(process.exitValue()))
